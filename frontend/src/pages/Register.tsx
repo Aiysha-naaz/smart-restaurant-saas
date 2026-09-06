@@ -176,6 +176,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import api from "@/lib/api";
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
@@ -188,49 +189,37 @@ export default function Register() {
 
   const navigate = useNavigate();
 
-  const handleRegister = async () => {
-    if (!name || !email || !password || !restaurantName) {
-      alert("Please fill all required fields");
-      return;
-    }
+ const handleRegister = async () => {
+  if (!name || !email || !password || !restaurantName) {
+    alert("Please fill all required fields");
+    return;
+  }
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const res = await fetch("http://localhost:5000/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          password,
-          restaurantName
-        })
-      });
+    const res = await api.post("/auth/register", {
+      name,
+      email,
+      password,
+      restaurantName
+    });
 
-      const data = await res.json();
+    const data = res.data;
 
-      if (res.ok) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
 
-        // optional: show restaurant ID once
-        alert(`Restaurant ID: ${data.restaurant.restaurantId}`);
+    alert(`Restaurant ID: ${data.restaurant.restaurantId}`);
 
-        navigate("/dashboard");
-      } else {
-        alert(data.msg || "Error");
-      }
-
-    } catch (error) {
-      console.error(error);
-      alert("Server error");
-    } finally {
-      setLoading(false);
-    }
-  };
+    navigate("/dashboard");
+  } catch (error) {
+    console.error(error);
+    alert(error.response?.data?.msg || "Server error");
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-8">

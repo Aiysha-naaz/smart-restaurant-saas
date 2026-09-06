@@ -61,6 +61,7 @@ export const createMenuItem = async (req, res) => {
 
     // ✅ normalize name
     data.name = data.name.trim().toLowerCase();
+     data.restaurantId = req.user.restaurantId;
 
     // ✅ normalize ingredients
     if (data.ingredients) {
@@ -162,9 +163,16 @@ export const getMenuByRestaurant = async (req, res) => {
 //   }
 // };
 
-
 export const updateMenuItem = async (req, res) => {
   try {
+    const existing = await MenuItem.findById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ message: "Menu item not found" });
+    }
+    if (String(existing.restaurantId) !== String(req.user.restaurantId)) {
+      return res.status(403).json({ message: "Not authorized for this menu item" });
+    }
+
     const data = req.body;
 
     if (data.name) {
@@ -205,6 +213,14 @@ export const updateMenuItem = async (req, res) => {
 
 export const deleteMenuItem = async (req, res) => {
   try {
+    const existing = await MenuItem.findById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ message: "Menu item not found" });
+    }
+    if (String(existing.restaurantId) !== String(req.user.restaurantId)) {
+      return res.status(403).json({ message: "Not authorized for this menu item" });
+    }
+
     await MenuItem.findByIdAndDelete(req.params.id);
     res.json({ message: "Deleted successfully" });
   } catch (err) {

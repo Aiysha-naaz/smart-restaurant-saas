@@ -786,6 +786,7 @@
 import { useState, useEffect } from "react";
 import { Plus, ScanLine, Search } from "lucide-react";
 import Tesseract from "tesseract.js";
+import api from "@/lib/api";
 
 export default function Inventory() {
   const [search, setSearch] = useState("");
@@ -819,183 +820,67 @@ const [showScanPreview, setShowScanPreview] = useState(false);
   const lowStockItems = inventory.filter(
     (item) => item.quantity <= item.threshold
   );
+useEffect(() => {
+  const fetchInventory = async () => {
+    try {
+      const res = await api.get("/inventory");
+      setInventory(res.data.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  useEffect(() => {
-    const fetchInventory = async () => {
-      try {
-        const token = localStorage.getItem("token");
-
-        const res = await fetch("http://localhost:5000/api/inventory", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          setInventory(data.data);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchInventory();
-  }, []);
-
-  // ✅ UPDATED (ADD + EDIT)
-  // const handleSave = async () => {
-  //   try {
-  //     const token = localStorage.getItem("token");
-
-  //     const url = editId
-  //       ? `http://localhost:5000/api/inventory/${editId}`
-  //       : "http://localhost:5000/api/inventory";
-
-  //     const method = editId ? "PUT" : "POST";
-
-  //     const res = await fetch(url, {
-  //       method,
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${token}`,
-  //       },
-  //       body: JSON.stringify({
-  //         name: form.name,
-  //         quantity: Number(form.quantity),
-  //         unit: form.unit,
-  //         costPerUnit: Number(form.costPerUnit),
-  //         threshold: Number(form.threshold),
-  //       }),
-  //     });
-
-  //     const data = await res.json();
-
-  //     if (res.ok) {
-  //       if (editId) {
-  //         setInventory((prev) =>
-  //           prev.map((i) => (i._id === editId ? data.data : i))
-  //         );
-  //       } else {
-  //         setInventory((prev) => [...prev, data.data]);
-  //       }
-
-  //       setForm({
-  //         name: "",
-  //         quantity: "",
-  //         unit: "",
-  //         costPerUnit: "",
-  //         threshold: ""
-  //       });
-
-  //       setEditId(null); // ✅ reset edit
-  //       setShowModal(false);
-  //     } else {
-  //       alert(data.message);
-  //     }
-  //   } catch (err) {
-  //     console.error(err);
-  //   }
-  // };
-
+  fetchInventory();
+}, []);
 
 const handleSave = async () => {
   try {
-    const token = localStorage.getItem("token");
-
-    // 🚫 DUPLICATE CHECK (frontend)
     const exists = inventory.some(
-  (item) =>
-    item.name.toLowerCase() === form.name.trim().toLowerCase() &&
-    item.unit.toLowerCase() === form.unit.toLowerCase() &&
-    item._id !== editId
-);
+      (item) =>
+        item.name.toLowerCase() === form.name.trim().toLowerCase() &&
+        item.unit.toLowerCase() === form.unit.toLowerCase() &&
+        item._id !== editId
+    );
 
     if (exists) {
       alert("Item already exists!");
       return;
     }
 
-    const url = editId
-      ? `http://localhost:5000/api/inventory/${editId}`
-      : "http://localhost:5000/api/inventory";
+    const payload = {
+      name: form.name,
+      quantity: Number(form.quantity),
+      unit: form.unit,
+      costPerUnit: Number(form.costPerUnit),
+      threshold: Number(form.threshold),
+    };
 
-    const method = editId ? "PUT" : "POST";
+    if (editId) {
+      await api.put(`/inventory/${editId}`, payload);
+    } else {
+      await api.post("/inventory", payload);
+    }
 
-    const res = await fetch(url, {
-      method,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        name: form.name,
-        quantity: Number(form.quantity),
-        unit: form.unit,
-        costPerUnit: Number(form.costPerUnit),
-        threshold: Number(form.threshold),
-      }),
+    const refresh = await api.get("/inventory");
+    setInventory(refresh.data.data);
+
+    setForm({
+      name: "",
+      quantity: "",
+      unit: "",
+      costPerUnit: "",
+      threshold: ""
     });
 
-    const data = await res.json();
-//working
-    // if (res.ok) {
-    //   if (editId) {
-    //     setInventory((prev) =>
-    //       prev.map((i) => (i._id === editId ? data.data : i))
-    //     );
-    //   } else {
-    //     setInventory((prev) => [...prev, data.data]);
-    //   }
-
-    //   setForm({
-    //     name: "",
-    //     quantity: "",
-    //     unit: "",
-    //     costPerUnit: "",
-    //     threshold: ""
-    //   });
-
-    //   setEditId(null);
-    //   setShowModal(false);
-    // } 
-    if (res.ok) {
-
-  // ✅ REFETCH inventory from backend (fresh data)
-  const refresh = await fetch("http://localhost:5000/api/inventory", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  const refreshedData = await refresh.json();
-
-  if (refresh.ok) {
-    setInventory(refreshedData.data);
-  }
-
-  // reset form
-  setForm({
-    name: "",
-    quantity: "",
-    unit: "",
-    costPerUnit: "",
-    threshold: ""
-  });
-
-  setEditId(null);
-  setShowModal(false);
-}else {
-      alert(data.message);
-    }
+    setEditId(null);
+    setShowModal(false);
   } catch (err) {
     console.error(err);
+    alert(err.response?.data?.message || "Error saving item");
   }
 };
-
 
 
   // ✅ EDIT
@@ -1012,65 +897,21 @@ const handleSave = async () => {
     setShowModal(true);
   };
 
-  // ✅ DELETE
-  // const handleDelete = async (id) => {
-  //   const confirmDelete = window.confirm("Delete this item?");
-  //   if (!confirmDelete) return;
-
-  //   try {
-  //     const token = localStorage.getItem("token");
-
-  //     await fetch(`http://localhost:5000/api/inventory/${id}`, {
-  //       method: "DELETE",
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //       },
-  //     });
-
-  //     setInventory((prev) => prev.filter((i) => i._id !== id));
-  //   } catch (err) {
-  //     console.error(err);
-  //   }
-  // };
 
   const handleDelete = async (id) => {
   const confirmDelete = window.confirm("Delete this item?");
   if (!confirmDelete) return;
 
   try {
-    const token = localStorage.getItem("token");
+    await api.delete(`/inventory/${id}`);
 
-    const res = await fetch(`http://localhost:5000/api/inventory/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      // setInventory((prev) => prev.filter((i) => i._id !== id));
-      const refresh = await fetch("http://localhost:5000/api/inventory", {
-  headers: {
-    Authorization: `Bearer ${token}`,
-  },
-});
-
-const refreshedData = await refresh.json();
-
-if (refresh.ok) {
-  setInventory(refreshedData.data);
-}
-    } else {
-      alert(data.message); // 🔴 SHOW ERROR
-    }
-
+    const refresh = await api.get("/inventory");
+    setInventory(refresh.data.data);
   } catch (err) {
     console.error(err);
+    alert(err.response?.data?.message || "Error deleting item");
   }
 };
-
 
 const handleFileUpload = async (e) => {
   const file = e.target.files[0];

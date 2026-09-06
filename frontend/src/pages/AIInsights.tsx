@@ -349,7 +349,7 @@ import {
   Tooltip,
 } from "recharts";
 import { motion } from "framer-motion";
-import axios from "axios";
+import api from "@/lib/api";
 
 // Mock chart data (can later come from backend too)
 const trendData = [
@@ -366,8 +366,8 @@ export default function AIInsights() {
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
-    axios
-      .get("http://localhost:5000/api/trends/market-trends")
+   api
+  .get("/trends/market-trends")
       .then((res) => setData(res.data))
       .catch(() =>
         setData({

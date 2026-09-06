@@ -631,7 +631,7 @@
 import { useEffect, useState } from "react";
 import { Search, Plus, Clock, Utensils } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
-import axios from "axios";
+import api from "@/lib/api";
 
 /* =========================
    TYPES
@@ -712,16 +712,16 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [showCompleted, setShowCompleted] = useState(false);
 
-  const restaurantId = "69dd0315fdbaf1fc3e305eb7";
+  // const restaurantId = "69dd0315fdbaf1fc3e305eb7";
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+const restaurantId = user.restaurantId;
 
   /* =========================
      FETCH
   ========================= */
   const fetchOrders = async () => {
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/orders/${restaurantId}`
-      );
+      const res = await api.get(`/orders/${restaurantId}`);
       setOrders(res.data);
     } catch (err) {
       console.error(err);
@@ -748,10 +748,7 @@ export default function OrdersPage() {
     else role = "manager";
 
     try {
-      await axios.patch(
-        `http://localhost:5000/api/orders/status/${id}`,
-        { status: next, role }
-      );
+      await api.patch(`/orders/status/${id}`, { status: next, role });
       fetchOrders();
     } catch (err: any) {
       console.error(err.response?.data || err.message);

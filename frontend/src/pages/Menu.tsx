@@ -781,6 +781,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Pencil, Trash2, ToggleLeft, ToggleRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import api from "@/lib/api";
 
 interface MenuItem {
   _id: string;
@@ -827,22 +828,20 @@ const navigate = useNavigate();
     image: "",
   });
 
-  const restaurantId = "69dd0315fdbaf1fc3e305eb7";
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+const restaurantId = user.restaurantId;
 
   // 📥 FETCH MENU
   const fetchMenu = async () => {
-    try {
-      const res = await fetch(
-        `http://localhost:5000/api/menu/${restaurantId}`
-      );
-      const data = await res.json();
-      setItems(data);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    const res = await api.get(`/menu/${restaurantId}`);
+    setItems(res.data);
+  } catch (err) {
+    console.log(err);
+  } finally {
+    setLoading(false);
+  }
+};
   useEffect(() => {
   const outOfStockItems = items.filter((item) => item.available === false);
 
@@ -893,26 +892,13 @@ const navigate = useNavigate();
 
       let res;
 
-      if (editId) {
-        // ✏️ UPDATE
-        res = await fetch(
-          `http://localhost:5000/api/menu/${editId}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          }
-        );
-      } else {
-        // ➕ CREATE
-        res = await fetch("http://localhost:5000/api/menu", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      }
+if (editId) {
+  res = await api.put(`/menu/${editId}`, payload);
+} else {
+  res = await api.post("/menu", payload);
+}
 
-      const data = await res.json();
+const data = res.data;
 
       if (editId) {
         setItems((prev) =>
@@ -955,16 +941,8 @@ const navigate = useNavigate();
   // 🔁 TOGGLE
   const toggleAvailability = async (id: string, current: boolean) => {
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/menu/${id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ available: !current }),
-        }
-      );
-
-      const updated = await res.json();
+      const res = await api.put(`/menu/${id}`, { available: !current });
+const updated = res.data;
 
       setItems((prev) =>
         prev.map((i) => (i._id === id ? updated : i))
@@ -977,9 +955,7 @@ const navigate = useNavigate();
   // ❌ DELETE
   const deleteItem = async (id: string) => {
     try {
-      await fetch(`http://localhost:5000/api/menu/${id}`, {
-        method: "DELETE",
-      });
+      await api.delete(`/menu/${id}`);
 
       setItems((prev) => prev.filter((i) => i._id !== id));
     } catch (err) {

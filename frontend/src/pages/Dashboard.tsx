@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 
 // Icons (same minimal ones)
 const UsersIcon = ({ className }: any) => (
@@ -40,10 +40,11 @@ const AlertIcon = ({ className }: any) => (
 
 export default function ProKpiDashboard() {
   const [data, setData] = useState<any>(null);
-  const restaurantId = "69dd0315fdbaf1fc3e305eb7";
+ const user = JSON.parse(localStorage.getItem("user") || "{}");
+const restaurantId = user.restaurantId;
 
   useEffect(() => {
-    axios.get(`http://localhost:5000/api/orders/kpis/${restaurantId}`).then(res => setData(res.data));
+    api.get(`/orders/kpis/${restaurantId}`).then(res => setData(res.data));
   }, []);
 
   if (!data) return <div className="p-6 text-gray-600">Loading...</div>;

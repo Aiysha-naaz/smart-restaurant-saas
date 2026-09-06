@@ -3,15 +3,16 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell
 } from "recharts";
-import axios from "axios";
+import api from "@/lib/api";
 
 export default function Analytics() {
   const [data, setData] = useState<any>(null);
   const [range, setRange] = useState("week");
-  const restaurantId = "69dd0315fdbaf1fc3e305eb7";
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+const restaurantId = user.restaurantId;
 
  useEffect(() => {
-  axios.get(`http://localhost:5000/api/orders/analytics/${restaurantId}?range=${range}`)
+ api.get(`/orders/analytics/${restaurantId}?range=${range}`)
     .then(res => {
       console.log("✅ LOADED:", res.data);
       setData(res.data);

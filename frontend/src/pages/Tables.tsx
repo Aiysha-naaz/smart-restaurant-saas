@@ -444,7 +444,7 @@
 
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 import { StatusBadge } from "@/components/StatusBadge";
 import { QrCode, Eye } from "lucide-react";
 
@@ -471,16 +471,15 @@ export default function Tables() {
   const [tableNumber, setTableNumber] = useState("");
   const [creating, setCreating] = useState(false);
 
-  const restaurantId = "69dd0315fdbaf1fc3e305eb7";
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+const restaurantId = user.restaurantId;
 
   /* =========================
      FETCH TABLES
   ========================= */
   const fetchTables = async () => {
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/tables/${restaurantId}`
-      );
+      const res = await api.get(`/tables/${restaurantId}`);
       setTables(res.data);
     } catch (err) {
       console.error(err);
@@ -502,12 +501,9 @@ export default function Tables() {
     try {
       setCreating(true);
 
-      await axios.post(
-        `http://localhost:5000/api/tables/${restaurantId}`,
-        {
-          number: Number(tableNumber),
-        }
-      );
+     await api.post(`/tables/${restaurantId}`, {
+  number: Number(tableNumber),
+});
 
       setTableNumber("");
       setShowAddModal(false);
@@ -524,9 +520,7 @@ export default function Tables() {
   ========================= */
   const markClean = async (id: string) => {
     try {
-      await axios.patch(
-        `http://localhost:5000/api/tables/${id}/clean`
-      );
+      await api.patch(`/tables/${id}/clean`);
 
       fetchTables();
     } catch (err) {

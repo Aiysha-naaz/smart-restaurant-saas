@@ -370,6 +370,7 @@
 
 
 import { useEffect, useState } from "react";
+import api from "@/lib/api";
 
 interface MenuItem {
   _id: string;
@@ -400,11 +401,8 @@ export default function CustomerMenu() {
   // FETCH MENU
   const fetchMenu = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/menu/${restaurantId}`
-      );
-      const data = await res.json();
-      setItems(data);
+     const res = await api.get(`/menu/${restaurantId}`);
+setItems(res.data);
     } catch (err) {
       console.log(err);
     } finally {
@@ -416,6 +414,13 @@ export default function CustomerMenu() {
     fetchMenu();
   }, []);
 
+
+  useEffect(() => {
+  const savedOrderId = localStorage.getItem("activeOrderId");
+  if (savedOrderId) {
+    pollOrderStatus(savedOrderId);
+  }
+}, []);
   // ADD TO CART
   const addToCart = (item: MenuItem) => {
     setCart((prev) => {
@@ -464,18 +469,14 @@ export default function CustomerMenu() {
         })),
       };
 
-      const res = await fetch("http://localhost:5000/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert("Order failed");
-        return;
-      }
+     let data;
+try {
+  const res = await api.post("/orders", payload);
+  data = res.data;
+} catch (err) {
+  alert("Order failed");
+  return;
+}
 
       setOrderStatus(data.order?.status || "pending");
       setCart([]);
@@ -488,18 +489,18 @@ export default function CustomerMenu() {
   };
 
   // POLL ORDER STATUS
-  const pollOrderStatus = (orderId: string) => {
+   const pollOrderStatus = (orderId: string) => {
+    localStorage.setItem("activeOrderId", orderId);
+
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(
-          `http://localhost:5000/api/orders/${orderId}`
-        );
-        const data = await res.json();
-
+        const res = await api.get(`/orders/order/${orderId}`);
+        const data = res.data;
         setOrderStatus(data.status);
 
         if (["completed", "cancelled"].includes(data.status)) {
           clearInterval(interval);
+          localStorage.removeItem("activeOrderId");
         }
       } catch (err) {
         console.log(err);

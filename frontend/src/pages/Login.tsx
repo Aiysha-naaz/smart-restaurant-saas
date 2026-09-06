@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import api from "@/lib/api";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -11,34 +12,16 @@ export default function Login() {
 const navigate = useNavigate();
   const handleLogin = async () => {
   try {
-    const res = await fetch("http://localhost:5000/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        email,
-        password
-      })
-    });
+    const res = await api.post("/auth/login", { email, password });
+    const data = res.data;
 
-    const data = await res.json();
-
-    if (res.ok) {
-      alert("Login successful");
-
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      // redirect
-      navigate("/dashboard");
-
-    } else {
-      alert(data.msg || "Login failed");
-    }
-
+    alert("Login successful");
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    navigate("/dashboard");
   } catch (error) {
     console.error(error);
+    alert(error.response?.data?.msg || "Login failed");
   }
 };
 

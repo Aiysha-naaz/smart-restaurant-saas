@@ -76,31 +76,51 @@
 
 // module.exports = router;
 
+// const express = require("express");
+// const router = express.Router();
+
+// const {
+//   createOrder,
+//   getOrders,
+//   getOrderById,
+//   updateOrderStatus,
+//   getDashboardKPIs,
+//   getAnalytics
+// } = require("../controllers/orderController");
+
+// router.post("/", createOrder);
+
+// router.get("/kpis/:restaurantId", getDashboardKPIs);
+// router.get("/analytics/:restaurantId", getAnalytics);
+// router.get("/order/:orderId", getOrderById);
+
+// router.get("/:restaurantId", getOrders);
+
+// router.patch("/status/:id", updateOrderStatus);
+
+// module.exports = router;
+
+
 
 const express = require("express");
 const router = express.Router();
+const { protect } = require("../middleware/authMiddleware");
 
 const {
   createOrder,
   getOrders,
+  getOrderById,
   updateOrderStatus,
   getDashboardKPIs,
   getAnalytics
 } = require("../controllers/orderController");
 
-router.post("/", createOrder);
+router.post("/", createOrder); // public - customers place orders
+router.get("/order/:orderId", getOrderById); // public - customers check status
 
-// router.get("/dashboard/orders", getDashboardOrders);
-
-router.get("/kpis/:restaurantId", getDashboardKPIs);
-router.get("/analytics/:restaurantId", getAnalytics);
-
-
-router.get("/:restaurantId", getOrders);
-
-// ✅ THIS IS MISSING OR WRONG IN YOUR CASE
-// router.patch("/:id/status", updateOrderStatus);
-router.patch("/status/:id", updateOrderStatus);
-
+router.get("/kpis/:restaurantId", protect, getDashboardKPIs);
+router.get("/analytics/:restaurantId", protect, getAnalytics);
+router.get("/:restaurantId", protect, getOrders);
+router.patch("/status/:id", protect, updateOrderStatus);
 
 module.exports = router;
